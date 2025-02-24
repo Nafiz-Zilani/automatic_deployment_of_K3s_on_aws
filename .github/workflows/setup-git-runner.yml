@@ -27,16 +27,14 @@ jobs:
         run: pulumi login
 
       - name: Pulumi stack select
-        run: pulumi stack select devgit add .
-git commit -m "Infra create and config runner"
-git push
- --cwd Infra
+        run: pulumi stack select dev --cwd Infra
 
       - name: Pulumi refresh
         run: pulumi refresh --yes --cwd Infra
       
       - name: Save Pulumi outputs
-        id: pulumi_outputs
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
         run: |
           GIT_RUNNER_IP=$(pulumi stack output git_runner_public_ip --cwd Infra)
           MASTER_NODE_IP=$(pulumi stack output master_private_ip --cwd Infra)
@@ -46,9 +44,6 @@ git push
           echo "MASTER_NODE_IP=$MASTER_NODE_IP" >> $GITHUB_ENV
           echo "WORKER_NODE1_IP=$WORKER_NODE1_IP" >> $GITHUB_ENV
           echo "WORKER_NODE2_IP=$WORKER_NODE2_IP" >> $GITHUB_ENV
-      
-        env:
-          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
 
       - name: Set up SSH agent
         uses: webfactory/ssh-agent@v0.5.3
@@ -76,7 +71,6 @@ git push
             fi
           EOF
 
-      
       - name: SSH into Runner instance and install Ansible
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@${{ env.GIT_RUNNER_IP }} << 'EOF'
